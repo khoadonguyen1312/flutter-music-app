@@ -181,17 +181,24 @@ class DynamicAudioPlayerImpl extends ChangeNotifier
                 ?.where((e) => e.format == ClosedCaptionFormat.vtt)
                 .toList();
 
-        Uri? uri =
-            vttSubtitles != null && vttSubtitles.isNotEmpty
-                ? vttSubtitles
-                    .where(
-                      (element) =>
-                          element.language.code == "vi" ||
-                          element.language.code == "en",
-                    )
-                    .last
-                    .url
-                : null;
+        Uri? uri;
+        if (vttSubtitles != null && vttSubtitles.isNotEmpty) {
+          ClosedCaptionTrackInfo? track;
+
+          try {
+            track = vttSubtitles.firstWhere((e) => e.language.code == "vi");
+          } catch (_) {
+            try {
+              track = vttSubtitles.firstWhere((e) => e.language.code == "en");
+            } catch (_) {
+              track = null;
+            }
+          }
+
+          uri = track?.url;
+        }
+
+
 
         logger.d("lay duoc uri ");
         logger.d(uri);
