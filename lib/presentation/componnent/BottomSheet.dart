@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:ionicons/ionicons.dart';
+import 'package:line_icons/line_icons.dart';
 import 'package:music/presentation/componnent/cricleCardAnimation.dart';
 import 'package:music/presentation/currentSong.dart';
 import 'package:music/presentation/home/homescreen.dart';
@@ -74,7 +76,7 @@ class BottomAudioPlayer extends StatelessWidget {
                   onPressed: () {
                     provider.back();
                   },
-                  icon: Icon(CupertinoIcons.back),
+                  icon: Icon(Ionicons.play_skip_back),
                 ),
                 IconButton(
                   onPressed: () {
@@ -89,7 +91,7 @@ class BottomAudioPlayer extends StatelessWidget {
                   onPressed: () {
                     provider.next();
                   },
-                  icon: Icon(CupertinoIcons.forward),
+                  icon: Icon(Ionicons.play_skip_forward_sharp),
                 ),
               ],
               mainAxisSize: MainAxisSize.min,

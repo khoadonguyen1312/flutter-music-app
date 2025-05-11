@@ -19,7 +19,13 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => DynamicAudioPlayerImpl()),
       ],
       child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+
         theme: ThemeData(
+          appBarTheme: AppBarTheme(
+
+              backgroundColor: Colors.transparent),
+        splashColor: Colors.transparent,
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(
             seedColor: Color(0xff4ED7F1),

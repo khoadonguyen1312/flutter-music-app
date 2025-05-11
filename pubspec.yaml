@@ -42,7 +42,12 @@ dependencies:
   provider:
   animations: ^2.0.11
   glowy_borders: ^1.0.2
-
+  line_icons: ^2.0.3
+  ionicons: ^0.2.2
+  avatar_glow: ^3.0.1
+  palette_generator: ^0.3.3+7
+  text_marquee:
+  http:
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -4,20 +4,25 @@ import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:music/config/AppLogger.dart';
+import 'package:music/model/Lyric.dart';
 import 'package:music/model/Song.dart';
 import 'package:music/service/audio_player/dynamic_audio_player.dart';
 import 'package:music/service/playlist/playlist.dart';
 import 'package:music/service/youtube/impl/yotube_service_impl.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import 'package:http/http.dart' as http;
 
 class DynamicAudioPlayerImpl extends ChangeNotifier
     implements DynamicAudioPlayer {
+  late List<LyricLine> lyricLines = [];
+  late String _raw_lyric;
   final AudioPlayer audioPlayer;
   final YotubeServiceImpl youtubeService;
   final DynamicPLaylist playlist;
   late final StreamSubscription _processingStateSub;
   late Duration position;
   late Duration duration;
+  late List<String> subtiles;
 
   DynamicAudioPlayerImpl({
     AudioPlayer? audioPlayer,
@@ -149,6 +154,8 @@ class DynamicAudioPlayerImpl extends ChangeNotifier
   @override
   Future<void> playsong(String audio_link) async {
     try {
+      lyricLines = [];
+
       if (audioPlayer.playing) {
         _isPlaying = false;
         await audioPlayer.stop();
@@ -156,10 +163,45 @@ class DynamicAudioPlayerImpl extends ChangeNotifier
       logger.d("đang chuẩn bị phát bài hát");
       String? audio = playlist.gsong().audio_stream;
       if (audio == null) {
+        List<Future> futures = [];
+        if (playlist.gsong().subtitles == null) {
+          futures.add(youtubeService.gSubtitle(playlist.gsong().id));
+        }
         logger.d("audio của bài hát đang rỗng");
-        playlist.gsong().audio_stream = await youtubeService.extractAudio(
-          playlist.gsong().id,
-        );
+        futures.add(youtubeService.extractAudio(playlist.gsong().id));
+        List<dynamic> process = await Future.wait(futures);
+        playlist.gsong().subtitles = process[0];
+        playlist.gsong().audio_stream = process[1];
+      }
+      try {
+        final vttSubtitles =
+            playlist
+                .gsong()
+                .subtitles
+                ?.where((e) => e.format == ClosedCaptionFormat.vtt)
+                .toList();
+
+        Uri? uri =
+            vttSubtitles != null && vttSubtitles.isNotEmpty
+                ? vttSubtitles
+                    .where(
+                      (element) =>
+                          element.language.code == "vi" ||
+                          element.language.code == "en",
+                    )
+                    .last
+                    .url
+                : null;
+
+        logger.d("lay duoc uri ");
+        logger.d(uri);
+        if (uri != null) {
+          _raw_lyric = await youtubeService.rawSubtile(uri!);
+          lyricLines = parseVtt(_raw_lyric);
+          logger.d("parse thanh cong uri");
+        }
+      } catch (e) {
+        logger.e("khong set duoc sub cho audio");
       }
       await audioPlayer.setUrl(playlist.gsong().audio_stream!);
       logger.d("set thành công audio link : ${audio} cho audioplayer");
@@ -169,7 +211,7 @@ class DynamicAudioPlayerImpl extends ChangeNotifier
       notifyListeners();
     } catch (error, strackTrace) {
       logger.e(
-        "không set được url cho audio lý do :",
+        "không set được url cho audio lý do :${error.toString()}",
         error: error,
         stackTrace: strackTrace,
       );
@@ -185,9 +227,21 @@ class DynamicAudioPlayerImpl extends ChangeNotifier
   }
 
   @override
-  Future<void> seekToSong(int index) async{
+  Future<void> seekToSong(int index) async {
     playlist.seekto(index);
     playsong("");
     notifyListeners();
+  }
+
+  Future<void> _extractSub(List<ClosedCaptionTrackInfo> subs) async {
+    if (subs.isEmpty) {
+      return;
+    }
+    ClosedCaptionTrackInfo sub =
+        subs
+            .where((element) => element.format == ClosedCaptionFormat.vtt)
+            .first;
+    final res = await http.get(sub.url);
+    if (res.statusCode == 200) {}
   }
 }

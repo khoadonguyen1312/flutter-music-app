@@ -1,3 +1,5 @@
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+
 import '../../model/Song.dart';
 
 abstract class YoutubeService {
@@ -17,4 +19,5 @@ abstract class YoutubeService {
   Future<List<String>> extractAudios(List<String> ids);
 
   Future<List<Song>> getAllFromPlaylist(String id);
+
 }
