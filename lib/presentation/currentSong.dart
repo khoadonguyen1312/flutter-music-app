@@ -68,8 +68,8 @@ class _CurrentSongState extends State<CurrentSong> {
                     imageBuilder:
                         (context, imageProvider) => Container(
                           alignment: Alignment.center,
-                          height: mediaQueryData.size.width * 0.7,
-                          width: mediaQueryData.size.width * 0.7,
+                          height: 320,
+                          width: 320,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             image: DecorationImage(
@@ -86,8 +86,8 @@ class _CurrentSongState extends State<CurrentSong> {
                               color: Colors.tealAccent.withOpacity(0.2),
                             ),
                           ),
-                          height: mediaQueryData.size.width * 0.7,
-                          width: mediaQueryData.size.width * 0.7,
+                          height: 320,
+                          width: 320,
                         ),
                     errorWidget: (context, url, error) => Icon(Icons.error),
                   ),

@@ -48,6 +48,7 @@ dependencies:
   palette_generator: ^0.3.3+7
   text_marquee:
   http:
+  just_audio_windows:
 dev_dependencies:
   flutter_test:
     sdk: flutter

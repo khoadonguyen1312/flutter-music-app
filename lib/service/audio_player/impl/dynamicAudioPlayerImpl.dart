@@ -202,14 +202,23 @@ class DynamicAudioPlayerImpl extends ChangeNotifier
           // }
           Map<String, List<ClosedCaptionTrackInfo>> mapByLang =
               _fillerBylangcode(vttSubtitles);
-          var sub = mapByLang['vi']?.first ?? mapByLang['es']?.first;
+          logger.d(mapByLang);
+          ClosedCaptionTrackInfo? sub;
 
-          if (sub != null) {
-            var uri = sub.url;
-            print('Subtitle URL: $uri');
+          final viList = mapByLang["vi"];
+          if (viList != null && viList.isNotEmpty) {
+            logger.d("lay duoc v sub");
+            sub = viList.first;
           } else {
-            print('No subtitle found for "vi" or "es"');
+            logger.d("khong lay duoc v sub");
+            final enList = mapByLang["en"];
+            if (enList != null && enList.isNotEmpty) {
+              logger.d("lay duoc en sub");
+              sub = enList.first;
+            }
           }
+          uri =sub!.url;
+
         }
 
         logger.d("lay duoc uri ");
