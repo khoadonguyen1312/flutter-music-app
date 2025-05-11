@@ -151,6 +151,17 @@ class DynamicAudioPlayerImpl extends ChangeNotifier
     }
   }
 
+  Map<String, List<ClosedCaptionTrackInfo>> _fillerBylangcode(
+    List<ClosedCaptionTrackInfo> list,
+  ) {
+    Map<String, List<ClosedCaptionTrackInfo>> results = {};
+    for (var item in list) {
+      final lang_code = item.language.code;
+      results.putIfAbsent(lang_code, () => []).add(item);
+    }
+    return results;
+  }
+
   @override
   Future<void> playsong(String audio_link) async {
     try {
@@ -174,31 +185,32 @@ class DynamicAudioPlayerImpl extends ChangeNotifier
         playlist.gsong().audio_stream = process[1];
       }
       try {
-        final vttSubtitles =
-            playlist
-                .gsong()
-                .subtitles
-                ?.where((e) => e.format == ClosedCaptionFormat.vtt)
-                .toList();
+        final vttSubtitles = playlist.gsong().subtitles;
 
         Uri? uri;
         if (vttSubtitles != null && vttSubtitles.isNotEmpty) {
           ClosedCaptionTrackInfo? track;
 
-          try {
-            track = vttSubtitles.firstWhere((e) => e.language.code == "vi");
-          } catch (_) {
-            try {
-              track = vttSubtitles.firstWhere((e) => e.language.code == "en");
-            } catch (_) {
-              track = null;
-            }
+          // try {
+          //   track = vttSubtitles.firstWhere((e) => e.language.code == "vi");
+          // } catch (_) {
+          //   try {
+          //     track = vttSubtitles.firstWhere((e) => e.language.code == "en");
+          //   } catch (_) {
+          //     track = null;
+          //   }
+          // }
+          Map<String, List<ClosedCaptionTrackInfo>> mapByLang =
+              _fillerBylangcode(vttSubtitles);
+          var sub = mapByLang['vi']?.first ?? mapByLang['es']?.first;
+
+          if (sub != null) {
+            var uri = sub.url;
+            print('Subtitle URL: $uri');
+          } else {
+            print('No subtitle found for "vi" or "es"');
           }
-
-          uri = track?.url;
         }
-
-
 
         logger.d("lay duoc uri ");
         logger.d(uri);
