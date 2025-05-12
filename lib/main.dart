@@ -5,7 +5,8 @@ import 'package:music/service/playlist/playlist.dart';
 import 'package:provider/provider.dart';
 import 'service/youtube/impl/yotube_service_impl.dart';
 
-void main() {
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 

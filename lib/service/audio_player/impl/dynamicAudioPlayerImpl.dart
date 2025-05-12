@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
-import 'package:just_audio/just_audio.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:music/config/AppLogger.dart';
 import 'package:music/model/Lyric.dart';
 import 'package:music/model/Song.dart';
@@ -20,8 +20,8 @@ class DynamicAudioPlayerImpl extends ChangeNotifier
   final YotubeServiceImpl youtubeService;
   final DynamicPLaylist playlist;
   late final StreamSubscription _processingStateSub;
-  late Duration position;
-  late Duration duration;
+  late Duration position =Duration.zero;
+  late Duration duration =Duration.zero;
   late List<String> subtiles;
 
   DynamicAudioPlayerImpl({
@@ -37,24 +37,22 @@ class DynamicAudioPlayerImpl extends ChangeNotifier
 
   @override
   Future<void> listenDuration() async {
-    duration =
-        audioPlayer.duration ??
-        Duration.zero; // Khởi tạo giá trị mặc định cho duration
-    position = audioPlayer.position; // Khởi tạo giá trị mặc định cho position
 
-    // Lắng nghe sự thay đổi của duration
-    audioPlayer.durationStream.listen((event) {
+
+    audioPlayer.onDurationChanged.listen((event) {
       if (event != null) {
         duration = event;
-        notifyListeners(); // Thông báo UI khi duration thay đổi
+        notifyListeners();
       }
     });
 
-    // Lắng nghe sự thay đổi của position
-    audioPlayer.positionStream.listen((event) {
+    //
+    audioPlayer.onPositionChanged.listen((event) {
       position = event;
-      notifyListeners(); // Thông báo UI khi position thay đổi
+      notifyListeners();
     });
+
+
   }
 
   Duration get getPosition => position;
@@ -69,8 +67,8 @@ class DynamicAudioPlayerImpl extends ChangeNotifier
 
   @override
   Future<void> auto_next() async {
-    _processingStateSub = audioPlayer.processingStateStream.listen((state) {
-      if (state == ProcessingState.completed) {
+    _processingStateSub = audioPlayer.onPlayerStateChanged.listen((state) {
+      if (state == PlayerState.completed) {
         next();
         notifyListeners();
       }
@@ -96,11 +94,11 @@ class DynamicAudioPlayerImpl extends ChangeNotifier
   @override
   Future<void> pause() async {
     try {
-      if (audioPlayer.playing) {
+      if (audioPlayer.state == PlayerState.playing) {
         await audioPlayer.pause();
         _isPlaying = false;
       } else {
-        await audioPlayer.play();
+        await audioPlayer.resume();
         _isPlaying = true;
       }
     } catch (error, st) {
@@ -124,8 +122,15 @@ class DynamicAudioPlayerImpl extends ChangeNotifier
 
   @override
   Future<void> seekTo(Duration duration) async {
-    await audioPlayer.seek(duration);
-    notifyListeners();
+    try{
+      logger.d("dang seek duration bai hat toi ${duration.toString()} ");
+      await audioPlayer.seek(duration);
+      notifyListeners();
+    }
+    catch(e)
+    {
+
+    }
   }
 
   @override
@@ -167,7 +172,7 @@ class DynamicAudioPlayerImpl extends ChangeNotifier
     try {
       lyricLines = [];
 
-      if (audioPlayer.playing) {
+      if (audioPlayer.state == PlayerState.playing) {
         _isPlaying = false;
         await audioPlayer.stop();
       }
@@ -217,8 +222,7 @@ class DynamicAudioPlayerImpl extends ChangeNotifier
               sub = enList.first;
             }
           }
-          uri =sub!.url;
-
+          uri = sub!.url;
         }
 
         logger.d("lay duoc uri ");
@@ -231,9 +235,10 @@ class DynamicAudioPlayerImpl extends ChangeNotifier
       } catch (e) {
         logger.e("khong set duoc sub cho audio");
       }
-      await audioPlayer.setUrl(playlist.gsong().audio_stream!);
+      // await audioPlayer.setSourceUrl(playlist.gsong().audio_stream!);
       logger.d("set thành công audio link : ${audio} cho audioplayer");
-      await audioPlayer.play();
+      await audioPlayer.play(UrlSource(playlist.gsong().audio_stream!));
+      listenDuration();
       logger.d("phát thành công audio link");
 
       notifyListeners();

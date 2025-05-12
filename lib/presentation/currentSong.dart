@@ -192,6 +192,7 @@ class _CurrentSongState extends State<CurrentSong> {
           ),
 
           const SizedBox(height: 32),
+          Text(provider.position.toString()),
           Container(
             margin: EdgeInsets.symmetric(horizontal: 18),
             padding: EdgeInsets.symmetric(horizontal: 12),
@@ -201,11 +202,11 @@ class _CurrentSongState extends State<CurrentSong> {
             ),
             child: Column(
               children: [
+
                 Slider(
-                  value: provider.getPosition.inMilliseconds.toDouble().clamp(
-                    0.0,
-                    provider.getDuration.inMilliseconds.toDouble(),
-                  ),
+                  value: provider.getPosition.inMilliseconds.toDouble(),
+
+
                   min: 0.0,
                   max: provider.getDuration.inMilliseconds.toDouble(),
                   thumbColor: Colors.black,

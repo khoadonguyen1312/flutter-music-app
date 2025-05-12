@@ -36,7 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   youtube_explode_dart: ^2.3.4
   logger:
-  just_audio:
+
   loading_animation_widget:
   cached_network_image:
   provider:
@@ -48,7 +48,8 @@ dependencies:
   palette_generator: ^0.3.3+7
   text_marquee:
   http:
-  just_audio_windows:
+
+  audioplayers:
 dev_dependencies:
   flutter_test:
     sdk: flutter
