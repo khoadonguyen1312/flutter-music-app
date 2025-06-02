@@ -9,6 +9,7 @@ import 'package:music/model/Song.dart';
 import 'package:music/service/audio_player/dynamic_audio_player.dart';
 import 'package:music/service/playlist/playlist.dart';
 import 'package:music/service/youtube/impl/yotube_service_impl.dart';
+import 'package:music/util/raw_test_subtile.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:http/http.dart' as http;
 
@@ -223,12 +224,14 @@ class DynamicAudioPlayerImpl extends ChangeNotifier
             }
           }
           uri = sub!.url;
+
         }
 
         logger.d("lay duoc uri ");
         logger.d(uri);
         if (uri != null) {
           _raw_lyric = await youtubeService.rawSubtile(uri!);
+          logger.d(_raw_lyric);
           lyricLines = parseVtt(_raw_lyric);
           logger.d("parse thanh cong uri");
         }

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:music/presentation/componnent/BottomSheet.dart';
+import 'package:music/provider/DesktopTabProvider.dart';
 import 'package:music/service/audio_player/impl/dynamicAudioPlayerImpl.dart';
 import 'package:music/service/playlist/playlist.dart';
 import 'package:provider/provider.dart';
 import 'service/youtube/impl/yotube_service_impl.dart';
 
-void main() async{
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
@@ -18,15 +19,14 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => DynamicAudioPlayerImpl()),
+        ChangeNotifierProvider(create: (context) => DesktopTabProvider()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
 
         theme: ThemeData(
-          appBarTheme: AppBarTheme(
-
-              backgroundColor: Colors.transparent),
-        splashColor: Colors.transparent,
+          appBarTheme: AppBarTheme(backgroundColor: Colors.transparent),
+          splashColor: Colors.transparent,
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(
             seedColor: Color(0xff4ED7F1),

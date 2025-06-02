@@ -5,10 +5,8 @@ class LyricLine {
 
   LyricLine(this.start, this.end, this.text);
 
-  // Constructor với chỉ start và text
   LyricLine.simple(this.start, this.text) : end = Duration.zero;
 
-  // Độ dài của dòng lời bài hát
   Duration get duration => end - start;
 
   @override
@@ -19,19 +17,18 @@ List<LyricLine> parseVtt(String vttContent) {
   final List<String> lines = vttContent.split('\n');
   final List<LyricLine> result = [];
 
-  // Regex chính xác hơn cho định dạng VTT
-  // Hỗ trợ cả định dạng HH:MM:SS.mmm và MM:SS.mmm
+  // Regex hỗ trợ định dạng HH:MM:SS,mmm hoặc HH:MM:SS.mmm
   final timeRegex = RegExp(
-      r'((?:\d+:)??\d+:\d+)\.(\d+)\s*-->\s*((?:\d+:)??\d+:\d+)\.(\d+)'
+      r'^\s*((?:\d+:)?\d+:\d+)[.,](\d+)\s*-->\s*((?:\d+:)?\d+:\d+)[.,](\d+)'
   );
 
-  // Bỏ qua dòng WEBVTT và metadata
   bool foundHeader = false;
   int i = 0;
 
-  // Tìm header WEBVTT
+  // Tìm header WEBVTT (bỏ qua BOM nếu có)
   while (i < lines.length) {
-    if (lines[i].trim().startsWith('WEBVTT')) {
+    final line = lines[i].trim().replaceAll('\uFEFF', '');
+    if (line.startsWith('WEBVTT')) {
       foundHeader = true;
       i++;
       break;
@@ -39,35 +36,36 @@ List<LyricLine> parseVtt(String vttContent) {
     i++;
   }
 
-  // Nếu không tìm thấy header, quay lại và coi như đây là file VTT đơn giản
+
   if (!foundHeader) {
     i = 0;
   }
 
-  // Bỏ qua metadata (các dòng trống và không chứa timestamps)
+
   while (i < lines.length && !timeRegex.hasMatch(lines[i])) {
     i++;
   }
 
-  // Bây giờ bắt đầu xử lý các cue
   while (i < lines.length) {
+    // Bỏ qua cue identifier nếu là số (ví dụ: 1, 2, 3)
+    if (RegExp(r'^\d+$').hasMatch(lines[i].trim())) {
+      i++;
+      continue;
+    }
+
     final match = timeRegex.firstMatch(lines[i]);
 
     if (match != null) {
-      // Parse thời gian bắt đầu
       final startTime = _parseTimeString(match.group(1)!, match.group(2)!);
-
-      // Parse thời gian kết thúc
       final endTime = _parseTimeString(match.group(3)!, match.group(4)!);
 
-      // Tìm nội dung lời
       i++;
       String text = "";
 
-      // Thu thập tất cả dòng cho đến khi gặp dòng trống hoặc dòng thời gian tiếp theo
       while (i < lines.length &&
           lines[i].trim().isNotEmpty &&
-          !timeRegex.hasMatch(lines[i])) {
+          !timeRegex.hasMatch(lines[i]) &&
+          !RegExp(r'^\d+$').hasMatch(lines[i].trim())) {
         if (text.isNotEmpty) {
           text += " ";
         }
@@ -75,29 +73,25 @@ List<LyricLine> parseVtt(String vttContent) {
         i++;
       }
 
-      if (text.isNotEmpty) {
-        result.add(LyricLine(startTime, endTime, text));
-      }
+      if (text.trim().isEmpty) continue;
+      if (endTime <= startTime) continue;
+
+      result.add(LyricLine(startTime, endTime, text));
     } else {
       i++;
     }
   }
 
-  // Sắp xếp theo thời gian bắt đầu để đảm bảo thứ tự chính xác
   result.sort((a, b) => a.start.compareTo(b.start));
-
   return result;
 }
 
-// Hàm tiện ích để chuyển đổi chuỗi thời gian thành Duration
 Duration _parseTimeString(String time, String millisStr) {
   final parts = time.split(':');
-
   int hours = 0;
   int minutes = 0;
   int seconds = 0;
 
-  // Xử lý HH:MM:SS hoặc MM:SS
   if (parts.length == 3) {
     hours = int.parse(parts[0]);
     minutes = int.parse(parts[1]);
@@ -107,15 +101,8 @@ Duration _parseTimeString(String time, String millisStr) {
     seconds = int.parse(parts[1]);
   }
 
-  // Xử lý milliseconds - chuẩn hóa về milliseconds
-  int milliseconds = 0;
-  if (millisStr.length == 3) {
-    milliseconds = int.parse(millisStr);
-  } else if (millisStr.length == 2) {
-    milliseconds = int.parse(millisStr) * 10;
-  } else if (millisStr.length == 1) {
-    milliseconds = int.parse(millisStr) * 100;
-  }
+  // Chuẩn hóa milliseconds từ 1-3 chữ số
+  int milliseconds = int.parse(millisStr.padRight(3, '0'));
 
   return Duration(
     hours: hours,

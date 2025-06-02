@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 
-extension Responsiveutil on BuildContext {
-  static bool isMobile(BuildContext context) {
-    final MediaQueryData mediaQueryData = MediaQuery.of(context);
-    return mediaQueryData.size.width < 600;
+extension ResponsiveUtil on BuildContext {
+  // Mobile: width < 768
+  bool get isMobile => MediaQuery.of(this).size.width < 768;
+
+  // Tablet: width >= 768 && width < 1024
+  bool get isTablet {
+    final width = MediaQuery.of(this).size.width;
+    return width >= 768 && width < 1024;
   }
 
-  static bool isTable(BuildContext context) {
-    return MediaQuery.of(context).size.width < 1024;
-  }
-
-  static bool isDesktop(BuildContext context) {
-    return MediaQuery.of(context).size.width > 1024;
-  }
+  // Desktop: width >= 1024
+  bool get isDesktop => MediaQuery.of(this).size.width >= 1024;
 }

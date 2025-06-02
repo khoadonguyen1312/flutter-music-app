@@ -1,18 +1,19 @@
-import 'package:avatar_glow/avatar_glow.dart';
+import 'dart:math';
+
+import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:duration/duration.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:logger/logger.dart';
+import 'package:marquee/marquee.dart';
+import 'package:mesh_gradient/mesh_gradient.dart';
 import 'package:music/config/AppLogger.dart';
-
-import 'package:music/presentation/componnent/cricleCardAnimation.dart';
 import 'package:music/service/audio_player/impl/dynamicAudioPlayerImpl.dart';
 import 'package:music/util/ColorFromImage.dart';
+import 'package:music/util/duration_format.dart';
 import 'package:provider/provider.dart';
-import 'package:text_marquee/text_marquee.dart';
-
-int previousIndex = -1;
 
 class CurrentSong extends StatefulWidget {
   const CurrentSong({super.key});
@@ -22,252 +23,302 @@ class CurrentSong extends StatefulWidget {
 }
 
 class _CurrentSongState extends State<CurrentSong> {
-  late FixedExtentScrollController controller;
+  late final AnimatedMeshGradientController _controller;
+  late final FixedExtentScrollController lyric_controller;
+  late int origin_increase = 0;
+  late int increase = 1;
+  List<Color> gradientColors = [
+    Colors.transparent,
+    Colors.transparent,
+    Colors.transparent,
+    Colors.transparent,
+  ];
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    controller = FixedExtentScrollController();
+    _controller = AnimatedMeshGradientController();
+    _controller.start();
+    lyric_controller = FixedExtentScrollController();
+    _updateColors();
+  }
+
+  Future<void> _updateColors() async {
+    final provider = Provider.of<DynamicAudioPlayerImpl>(
+      context,
+      listen: false,
+    );
+    final colors = await getImagePalette(
+      CachedNetworkImageProvider(provider.playlist
+          .gsong()
+          .thumb),
+    );
+
+    if (mounted && colors.isNotEmpty) {
+      setState(() {
+        gradientColors = colors;
+      });
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final provider = Provider.of<DynamicAudioPlayerImpl>(context);
   }
 
   @override
   void dispose() {
-    // TODO: implement dispose
+    _controller.dispose();
     super.dispose();
-    controller.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<DynamicAudioPlayerImpl>(context, listen: true);
-    final MediaQueryData mediaQueryData = MediaQuery.of(context);
+    final mediaQueryData = MediaQuery.of(context);
+    final provider = Provider.of<DynamicAudioPlayerImpl>(context);
 
     return Scaffold(
+      drawer: Drawer(),
       appBar: AppBar(
-        title: Text("Playing now"),
-        centerTitle: true,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          icon: Icon(CupertinoIcons.back),
+        ),
         backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
       ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            children: [
-              Center(
-                child: AvatarGlow(
-                  glowRadiusFactor: 0.2,
-                  startDelay: const Duration(milliseconds: 1000),
-                  glowColor: Colors.white54,
-                  glowShape: BoxShape.circle,
-                  curve: Curves.fastOutSlowIn,
-                  child: CachedNetworkImage(
-                    alignment: Alignment.center,
-                    imageUrl: provider.playlist.gsong().thumb,
-                    imageBuilder:
-                        (context, imageProvider) => Container(
-                          alignment: Alignment.center,
-                          height: 320,
-                          width: 320,
+      extendBodyBehindAppBar: true,
+      body: InkWell(
+        onTap: () {},
+        child: Container(
+          height: mediaQueryData.size.height,
+          width: mediaQueryData.size.width,
+          child: AnimatedMeshGradient(
+            child: Row(
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      InkWell(
+                        onTap: () {
+                          // if (increase < origin_increase) {
+                          //   increase += new Random().nextInt(20);
+                          // }
+                          // if (increase >= origin_increase) {
+                          //   increase -= new Random().nextInt(20);
+                          // }
+                          int bienso = new Random().nextInt(25);
+                          logger.d(bienso);
+                          increase -= bienso;
+                          setState(() {});
+                          Future.delayed(Duration(milliseconds: 150), () {
+                            increase += bienso;
+
+                            setState(() {});
+                          });
+                        },
+                        child: AnimatedContainer(
+                          duration: Duration(milliseconds: 200),
+                          curve: Curves.linear,
+                          height:
+                          (provider.audioPlayer.state == PlayerState.playing
+                              ? 420
+                              : 320) +
+                              increase.toDouble(),
+                          width:
+                          (provider.audioPlayer.state == PlayerState.playing
+                              ? 420
+                              : 320) +
+                              increase.toDouble(),
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle,
+                            borderRadius: BorderRadius.circular(12),
                             image: DecorationImage(
-                              image: imageProvider,
-                              fit: BoxFit.none,
+                              fit: BoxFit.cover,
+
+                              image: CachedNetworkImageProvider(
+                                provider.playlist
+                                    .gsong()
+                                    .thumb,
+                              ),
                             ),
                           ),
                         ),
-                    placeholder:
-                        (context, url) => Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.tealAccent.withOpacity(0.2),
-                            ),
-                          ),
-                          height: 320,
-                          width: 320,
-                        ),
-                    errorWidget: (context, url, error) => Icon(Icons.error),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 42),
-
-              if (provider.lyricLines != null)
-                Container(
-                  height: 280,
-                  child: Consumer<DynamicAudioPlayerImpl>(
-                    builder: (context, value, child) {
-                      int current_index = 0;
-
-                      for (int i = 0; i < value.lyricLines.length - 1; i++) {
-                        if (value.lyricLines[i].start <= value.position) {
-                          current_index = i;
-                        } else {
-                          break;
-                        }
-                      }
-
-                      if (current_index != previousIndex) {
-                        controller.animateToItem(
-                          current_index,
-                          duration: Duration(milliseconds: 400),
-                          curve: Curves.decelerate,
-                        );
-                      }
-
-                      return CupertinoPicker(
-                        scrollController: controller,
-                        itemExtent: 60,
-
-                        diameterRatio: 1.8,
-                        selectionOverlay: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        magnification: 1.2,
-                        squeeze: 0.95,
-                        looping: false,
-                        onSelectedItemChanged: (time) {},
-                        children:
-                            value.lyricLines.length == 0
-                                ? [
-                                  Center(
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        LoadingAnimationWidget.bouncingBall(
-                                          color: Colors.white,
-                                          size: 32,
-                                        ),
-                                        SizedBox(width: 12),
-                                        Text("Không tìm thấy sub"),
-                                      ],
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: 420,
+                        height: 24,
+                        child: Marquee(text: provider.playlist
+                            .gsong()
+                            .name),
+                      ),
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 42),
+                        child: Row(
+                          children: [
+                            Text(formatDurationShort(provider.position)),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: SizedBox(
+                                height: 12,
+                                child: SliderTheme(
+                                  data: SliderTheme.of(context).copyWith(
+                                    trackHeight: 2,
+                                    thumbShape: const RoundSliderThumbShape(
+                                      enabledThumbRadius: 0,
                                     ),
+                                    overlayShape:
+                                    SliderComponentShape.noOverlay,
+                                    activeTrackColor: Colors.white,
+                                    inactiveTrackColor: Colors.grey.shade700,
                                   ),
-                                ]
-                                : List.generate(
-                                  value.lyricLines.length,
-                                  (index) => Container(
-                                    width:
-                                        MediaQuery.of(context).size.width *
-                                        0.8,
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        value.lyricLines[index].text,
-                                        style: TextStyle(
-                                          color:
-                                              index == current_index
-                                                  ? Colors.white
-                                                  : Colors.white.withOpacity(
-                                                    0.6,
-                                                  ),
-                                          fontSize:
-                                              index == current_index ? 14 : 12,
-                                          fontWeight:
-                                              index == current_index
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
-                                          letterSpacing: 0.5,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
+                                  child: Slider(
+                                    max:
+                                    provider.duration.inMilliseconds
+                                        .toDouble(),
+                                    value:
+                                    provider.position.inMilliseconds
+                                        .toDouble(),
+                                    onChanged: (pos) {
+                                      provider.seekTo(
+                                        Duration(milliseconds: pos.toInt()),
+                                      );
+                                    },
                                   ),
                                 ),
-                      );
-                    },
+                              ),
+                            ),
+
+                            const SizedBox(width: 12),
+                            Text(formatDurationShort(provider.duration)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            onPressed: () {},
+                            icon: Icon(Icons.shuffle),
+                          ),
+                          const SizedBox(width: 6),
+                          IconButton(
+                            onPressed: () {
+                              provider.back();
+                              setState(() {});
+                            },
+                            icon: Icon(Icons.skip_previous),
+                          ),
+                          const SizedBox(width: 6),
+                          IconButton(
+                            onPressed: () {
+                              provider.pause();
+                            },
+                            icon: Icon(Icons.pause_circle),
+                          ),
+                          const SizedBox(width: 6),
+                          IconButton(
+                            onPressed: () {
+                              provider.next();
+                              setState(() {});
+                            },
+                            icon: Icon(Icons.skip_next),
+                          ),
+                          const SizedBox(width: 6),
+                          IconButton(onPressed: () {}, icon: Icon(Icons.cast)),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-            ],
-          ),
+                Expanded(
+                  child: Container(
+                    child: Center(
+                      child:
+                      provider.lyricLines.isEmpty
+                          ? Column(
+                        children: [
+                          Row(children: List.generate(3, (index) =>
+                              CachedNetworkImage(
+                                  imageUrl: "https://i0.wp.com/lordlibidan.com/wp-content/uploads/2019/03/Running-Pikachu-GIF.gif?fit=480%2C342&ssl=1"),),),
+                          Text(
+                            "Không tìm thấy lyric cho bài hát",
+                            style: TextStyle(
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ],
+                      )
+                          : Consumer<DynamicAudioPlayerImpl>(
+                        builder: (context, value, child) {
+                          int current_index = 0;
 
-          const SizedBox(height: 32),
-          Text(provider.position.toString()),
-          Container(
-            margin: EdgeInsets.symmetric(horizontal: 18),
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: [
+                          for (
+                          int i = 0;
+                          i < value.lyricLines.length - 1;
+                          i++
+                          ) {
+                            if (value.lyricLines[i].start <=
+                                value.position) {
+                              current_index = i;
+                            } else {
+                              break;
+                            }
+                          }
+                          lyric_controller.animateToItem(
+                            current_index,
+                            duration: Duration(milliseconds: 300),
+                            curve: Curves.linear,
+                          );
+                          return Container(
+                            child: CupertinoPicker(
+                              itemExtent: 60,
 
-                Slider(
-                  value: provider.getPosition.inMilliseconds.toDouble(),
-
-
-                  min: 0.0,
-                  max: provider.getDuration.inMilliseconds.toDouble(),
-                  thumbColor: Colors.black,
-                  inactiveColor: Colors.black26,
-                  activeColor: Colors.black,
-
-                  onChanged: (value) {
-                    provider.seekTo(Duration(milliseconds: value.toInt()));
-                  },
+                              diameterRatio: 1.4,
+                              selectionOverlay: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(
+                                    8,
+                                  ),
+                                ),
+                              ),
+                              magnification: 1.2,
+                              squeeze: 0.95,
+                              looping: false,
+                              onSelectedItemChanged: (value) {},
+                              children: List.generate(
+                                value.lyricLines.length,
+                                    (index) =>
+                                    Text(value.lyricLines[index].text),
+                              ),
+                              scrollController: lyric_controller,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  flex: 5,
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      padding: EdgeInsets.all(12),
-                      onPressed: () {},
-                      icon: Icon(Ionicons.menu, size: 32, color: Colors.black),
-                    ),
-                    Row(
-                      children: [
-                        IconButton(
-                          padding: EdgeInsets.all(12),
-                          onPressed: () {},
-                          icon: Icon(
-                            Ionicons.play_skip_back,
-                            size: 32,
-                            color: Colors.black,
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () {},
-                          icon: Icon(
-                            Ionicons.pause,
-                            size: 32,
-                            color: Colors.black,
-                          ),
-                        ),
-                        IconButton(
-                          padding: EdgeInsets.all(12),
-                          onPressed: () {
-                            provider.next();
-                          },
-                          icon: Icon(
-                            Ionicons.play_skip_forward,
-                            size: 32,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      onPressed: () {},
-                      icon: Icon(Ionicons.heart, color: Colors.redAccent),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 32),
               ],
             ),
+            colors: gradientColors.map((e) => e.withOpacity(0.4)).toList(),
+            options: AnimatedMeshGradientOptions(),
           ),
-        ],
+        ),
       ),
     );
   }

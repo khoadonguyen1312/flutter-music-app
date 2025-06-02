@@ -23,7 +23,9 @@ class _SearchScreenState extends State<SearchScreen> {
     return Scaffold(
 
 
-        appBar: AppBar(actions: [const _SearchButton()]));
+        appBar: AppBar(
+            title: Text("Search"),
+            actions: [const _SearchButton()]));
   }
 }
 
@@ -89,7 +91,6 @@ class DynamicSearchDelegate extends SearchDelegate {
                 contentPadding: EdgeInsets.zero,
                 title: Text(data[index].name),
                 leading: Container(
-
                   width: 80,
                   decoration: BoxDecoration(
                     image: DecorationImage(
